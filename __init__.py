@@ -46,6 +46,21 @@ NODE_DISPLAY_NAME_MAPPINGS = {
 
 WEB_DIRECTORY = "./web"
 
+# --- Sol-Attn 签名兼容垫片 ---
+# sol_attn_minimax_v2 按旧内核 API 传参，comfy_kitchen 新内核已移除这些参数
+# → TypeError → Sol-Attn 每步 fallback 慢速注意力。包导入期安装进程级
+# 幂等包装（详见 minimax_h3/h3_sampling/solattn_compat.py）。
+def _install_solattn_shim() -> None:
+    from .minimax_h3.h3_sampling.solattn_compat import install
+    install()
+
+
+try:
+    _install_solattn_shim()
+except Exception as _e:  # 垫片失败不影响本包主功能
+    import logging
+    logging.getLogger(__name__).warning("[Deciia] Sol-Attn 垫片安装失败(忽略): %s", _e)
+
 __all__ = [
     "NODE_CLASS_MAPPINGS",
     "NODE_DISPLAY_NAME_MAPPINGS",
