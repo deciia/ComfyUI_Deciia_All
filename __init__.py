@@ -1,0 +1,53 @@
+"""ComfyUI_Deciia_All（作者 deciia）
+
+自建 ComfyUI 自定义节点合集：MiniMax-H3 采样执行器、跨插件桥接节点、
+LoRA 串管理，以及配套前端面板。
+
+子包布局（按模型域划分，便于以后扩展其它模型）：
+- minimax_h3/  H3 专属：h3_sampling（分块/时间分块二采执行器）、
+  ght8_bridge、reft8_bridge（跨插件桥接）
+- stacks/      模型无关：DeciiaLoraStack / DeciiaVramSafeLoraStack
+- web/         前端 JS（LoRA 面板）
+- examples/    示例工作流
+- docs/        上游依赖关系与节点说明
+
+上游插件（T8 / GH / MiniMaxRefDirector）全部运行时互操作，零修改、
+零代码复制，可独立正常更新；详见 docs/upstream-dependencies.md。
+"""
+
+from .minimax_h3.h3_sampling import (
+    chunked_pass2 as _chunked_pass2,
+    tiled_second_pass as _tiled_second_pass,
+)
+from .stacks import (
+    lora_stack as _lora_stack,
+    vramsafe_lora_stack as _vramsafe_lora_stack,
+)
+from .minimax_h3.ght8_bridge import nodes as _ght8_nodes
+from .minimax_h3.reft8_bridge import nodes as _reft8_nodes
+
+NODE_CLASS_MAPPINGS = {
+    **_tiled_second_pass.NODE_CLASS_MAPPINGS,
+    **_chunked_pass2.NODE_CLASS_MAPPINGS,
+    **_lora_stack.NODE_CLASS_MAPPINGS,
+    **_vramsafe_lora_stack.NODE_CLASS_MAPPINGS,
+    **_ght8_nodes.NODE_CLASS_MAPPINGS,
+    **_reft8_nodes.NODE_CLASS_MAPPINGS,
+}
+
+NODE_DISPLAY_NAME_MAPPINGS = {
+    **_tiled_second_pass.NODE_DISPLAY_NAME_MAPPINGS,
+    **_chunked_pass2.NODE_DISPLAY_NAME_MAPPINGS,
+    **_lora_stack.NODE_DISPLAY_NAME_MAPPINGS,
+    **_vramsafe_lora_stack.NODE_DISPLAY_NAME_MAPPINGS,
+    **_ght8_nodes.NODE_DISPLAY_NAME_MAPPINGS,
+    **_reft8_nodes.NODE_DISPLAY_NAME_MAPPINGS,
+}
+
+WEB_DIRECTORY = "./web"
+
+__all__ = [
+    "NODE_CLASS_MAPPINGS",
+    "NODE_DISPLAY_NAME_MAPPINGS",
+    "WEB_DIRECTORY",
+]
