@@ -23,7 +23,7 @@ GH 全家桶前端 + T8 官方分块二采（`standard_joint_4plus4_exp`）的�
 - MiniMaxH3LearnedLatentUpscaleT8Advanced / MiniMaxH3TwoPassLatentReconcileT8Advanced / MiniMaxH3TwoPassDetailMixerT8Advanced（旧路线）
 - MiniMaxH3AVDecodeT8（音视频联合解码）
 
-**GH · Goohai-MiniMax-H3_Integration**
+**GH · [Goohai-MiniMax-H3_Integration](https://github.com/goohai/Goohai-MiniMax-H3_Integration)**
 - MiniMaxH3IntegrationGH（参考图/主体定义/提示词一站式前端）
 
 **Deciia · ComfyUI_Deciia_All**（本仓库）
@@ -32,11 +32,11 @@ GH 全家桶前端 + T8 官方分块二采（`standard_joint_4plus4_exp`）的�
 - DeciiaChunkedPass2Sampler（T8 v4 时间分块二采壳，旧路线用）
 
 **加速与显存**
-- MiniMaxH3MemoryEfficientSageAttentionPatch、MiniMaxChunkFeedForward、MiniMaxLowVRAMAttention、ModelAttentionBackend（KJNodes / 内置）
+- MiniMaxH3MemoryEfficientSageAttentionPatch、MiniMaxChunkFeedForward、MiniMaxLowVRAMAttention、ModelPreviewOverrideKJ（[kijai/ComfyUI-KJNodes](https://github.com/kijai/ComfyUI-KJNodes)）；ModelAttentionBackend（内置）
 
 **其它**
-- VHS_VideoCombine（VideoHelperSuite，输出 MP4）
-- ConcatTextOfUtils（utils-nodes）、CR Prompt Text（ComfyUI_Comfyroll_CustomNodes）、easy anythingIndexSwitch（ComfyUI-Easy-Use，底模 A/B 切换）
+- VHS_VideoCombine（[Kosinkadink/ComfyUI-VideoHelperSuite](https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite)，输出 MP4）
+- ConcatTextOfUtils（[zhangp365/ComfyUI-utils-nodes](https://github.com/zhangp365/ComfyUI-utils-nodes)）、CR Prompt Text（[Suzie1/ComfyUI_Comfyroll_CustomNodes](https://github.com/Suzie1/ComfyUI_Comfyroll_CustomNodes)）、easy anythingIndexSwitch（[yolain/ComfyUI-Easy-Use](https://github.com/yolain/ComfyUI-Easy-Use)，底模 A/B 切换）
 - BasicGuider / RandomNoise / SamplerCustomAdvanced / LoraLoaderBypassModelOnly / ModelAttentionBackend / CLIPLoader / UNETLoader / VAELoader（ComfyUI 内置）
 - GetNode / SetNode / MarkdownNote / Note（前端内置）
 
