@@ -344,6 +344,30 @@ function buildCard(tool, host) {
   return card;
 }
 
+
+/** 分段选择控件：替代原生 <select>，避免深色主题下弹层文字与背景同色导致"看不见选项"。 */
+function segmentedControl(items, value) {
+  const box = el("div", "display:flex;flex-wrap:wrap;gap:6px");
+  let current = value;
+  const pairs = [];
+  const paint = () => {
+    for (const [val, node] of pairs) {
+      const on = val === current;
+      node.style.borderColor = on ? "#7d6848" : "color-mix(in srgb,currentColor 20%,transparent)";
+      node.style.background = on ? "#2a241c" : "transparent";
+      node.style.color = on ? "#f0cf98" : "inherit";
+      node.style.fontWeight = on ? "700" : "500";
+    }
+  };
+  for (const [val, text] of items) {
+    const node = btn(text, MINI_BTN_STYLE, () => { current = val; paint(); });
+    pairs.push([val, node]);
+    box.append(node);
+  }
+  paint();
+  return { box, get value() { return current; } };
+}
+
 function lockedInput(label, value, styles = "") {
   const box = el("label", "display:grid;gap:4px;font-size:11px;opacity:.85");
   box.append(el("span", "", label));
@@ -370,30 +394,22 @@ function buildEditor(tool, host) {
   const sumF = lockedInput("描述（一句话，可空）", draft.summary);
   const hintF = lockedInput("右侧小字（端口/标签，可空）", draft.hint);
 
-  const modeRow = el("div", "display:grid;gap:4px;font-size:11px;opacity:.85");
+  const modeRow = el("div", "display:grid;gap:6px;font-size:11px;opacity:.85");
   modeRow.append(el("span", "", "打开方式"));
-  const modeSel = el("select", "padding:6px 8px;border-radius:7px;border:1px solid color-mix(in srgb,currentColor 22%,transparent);" +
-    "background:color-mix(in srgb,currentColor 6%,transparent);color:inherit;font:500 12px/1.3 inherit");
-  for (const [value, text] of [["embed", "ComfyUI 内浮层（同曜石导演台）"], ["new_window", "浏览器新窗口"]]) {
-    const opt = el("option", "", text);
-    opt.value = value;
-    if ((draft.open_mode || "embed") === value) opt.selected = true;
-    modeSel.append(opt);
-  }
-  modeRow.append(modeSel);
+  const modeSel = segmentedControl(
+    [["embed", "⧉ ComfyUI 内浮层"], ["new_window", "↗ 浏览器新窗口"]],
+    draft.open_mode || "embed",
+  );
+  modeRow.append(modeSel.box);
 
   const statusF = lockedInput("探测地址（可空，默认用上面的地址）", draft.status_url);
-  const statusModeRow = el("div", "display:grid;gap:4px;font-size:11px;opacity:.85");
+  const statusModeRow = el("div", "display:grid;gap:6px;font-size:11px;opacity:.85");
   statusModeRow.append(el("span", "", "探测方式"));
-  const statusSel = el("select", "padding:6px 8px;border-radius:7px;border:1px solid color-mix(in srgb,currentColor 22%,transparent);" +
-    "background:color-mix(in srgb,currentColor 6%,transparent);color:inherit;font:500 12px/1.3 inherit");
-  for (const [value, text] of [["http", "HTTP 200 即在线"], ["json_field:backend", "JSON 字段（如 backend=ready）"], ["none", "不探测"]]) {
-    const opt = el("option", "", text);
-    opt.value = value;
-    if ((draft.status_mode || "http") === value) opt.selected = true;
-    statusSel.append(opt);
-  }
-  statusModeRow.append(statusSel);
+  const statusSel = segmentedControl(
+    [["http", "HTTP 200 即在线"], ["json_field:backend", "JSON 字段 backend=ready"], ["none", "不探测"]],
+    draft.status_mode || "http",
+  );
+  statusModeRow.append(statusSel.box);
 
   const actions = el("div", "display:flex;gap:6px;justify-content:flex-end");
   actions.append(
