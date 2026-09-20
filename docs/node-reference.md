@@ -35,6 +35,13 @@ H3 二采**时间分块**执行器（T8 `chunked_two_pass_upscale_advanced` 薄�
 H3 二采**空间分块**执行器（GH `TiledSamplerLegacy.sample_tiled`
 薄壳）。与 T8 链不兼容，仅作 GH 链备援。
 
+## workstation
+
+### DeciiaWorkstation
+工作台启动器节点：输出当前工具清单 JSON（不排队、不加载模型）。
+交互在侧栏面板（`web/deciia_workstation.js`），工具增删/导入/扫描与打开方式见 README「工作台」章节。
+HTTP 路由：`GET/POST /deciia_workstation/tools`、`POST /deciia_workstation/probe`。
+
 ## stacks
 
 ### DeciiaLoraStack

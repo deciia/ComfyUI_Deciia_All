@@ -25,6 +25,8 @@ from .stacks import (
 )
 from .minimax_h3.ght8_bridge import nodes as _ght8_nodes
 from .minimax_h3.reft8_bridge import nodes as _reft8_nodes
+from .workstation import nodes as _workstation_nodes
+from .workstation import store as _workstation_store
 
 NODE_CLASS_MAPPINGS = {
     **_tiled_second_pass.NODE_CLASS_MAPPINGS,
@@ -33,6 +35,7 @@ NODE_CLASS_MAPPINGS = {
     **_vramsafe_lora_stack.NODE_CLASS_MAPPINGS,
     **_ght8_nodes.NODE_CLASS_MAPPINGS,
     **_reft8_nodes.NODE_CLASS_MAPPINGS,
+    **_workstation_nodes.NODE_CLASS_MAPPINGS,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -42,6 +45,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     **_vramsafe_lora_stack.NODE_DISPLAY_NAME_MAPPINGS,
     **_ght8_nodes.NODE_DISPLAY_NAME_MAPPINGS,
     **_reft8_nodes.NODE_DISPLAY_NAME_MAPPINGS,
+    **_workstation_nodes.NODE_DISPLAY_NAME_MAPPINGS,
 }
 
 WEB_DIRECTORY = "./web"
@@ -60,6 +64,18 @@ try:
 except Exception as _e:  # 垫片失败不影响本包主功能
     import logging
     logging.getLogger(__name__).warning("[Deciia] Sol-Attn 垫片安装失败(忽略): %s", _e)
+
+# --- 工作台 HTTP 路由（/deciia_workstation/tools、/probe） ---
+# main.py 中 PromptServer 先于 init_extra_nodes 创建，import 期即可注册。
+try:
+    if not _workstation_store.register_routes():
+        import logging
+        logging.getLogger(__name__).warning(
+            "[Deciia] 工作台路由未注册（PromptServer 尚未就绪）——重启 ComfyUI 后生效"
+        )
+except Exception as _e:
+    import logging
+    logging.getLogger(__name__).warning("[Deciia] 工作台路由注册失败: %s", _e)
 
 __all__ = [
     "NODE_CLASS_MAPPINGS",
