@@ -12,7 +12,8 @@
     name        显示名
     url         目标地址（支持站内相对路径 /directordeck/ 或绝对 http://host:port/）
     icon        emoji 图标
-    hint        右侧小字（端口/说明）
+    summary     卡片描述（一句话，可空）
+    hint        卡片右侧小字（端口/标签）
     open_mode   embed=ComfyUI 内浮层 iframe；new_window=浏览器新窗口
     status_url  可选，探测地址（缺省用 url）
     status_mode 可选，'json_field:<key>' 取字段；'http' 仅看 HTTP 200
@@ -42,6 +43,7 @@ STATUS_MODES = ("http", "json_field", "none")
 DEFAULT_TOOLS = [
     {
         "id": "obsidian-director",
+        "summary": "统一管理素材、镜头、画幅、声音与生成路线（T8 D1–D3）。",
         "name": "曜石导演台",
         "url": "/minimax_h3_t8/director/ui",
         "icon": "🎬",
@@ -54,6 +56,7 @@ DEFAULT_TOOLS = [
     },
     {
         "id": "directordeck",
+        "summary": "DirectorDeck 工作台：分镜、素材与生成后端。",
         "name": "Director",
         "url": "/directordeck/",
         "icon": "🎥",
@@ -66,6 +69,7 @@ DEFAULT_TOOLS = [
     },
     {
         "id": "dreamifly",
+        "summary": "Dreamifly 前端工作台（Next.js，本机 3000 端口）。",
         "name": "Dreamifly",
         "url": "/dreamifly/",
         "icon": "🎨",
@@ -78,6 +82,7 @@ DEFAULT_TOOLS = [
     },
     {
         "id": "nexus-bta",
+        "summary": "NEXUS BTA Studio：图像生成工作台（本机 7861 端口）。",
         "name": "NEXUS BTA Studio",
         "url": "/nexus-bta/",
         "icon": "🤖",
@@ -149,6 +154,7 @@ def normalize_tool(raw: dict) -> dict:
         "name": name,
         "url": _clean_url(raw.get("url")),
         "icon": str(raw.get("icon") or "🧩")[:8],
+        "summary": str(raw.get("summary") or "")[:160],
         "hint": str(raw.get("hint") or "")[:40],
         "open_mode": open_mode,
         "status_url": _clean_url(raw["status_url"]) if raw.get("status_url") else "",

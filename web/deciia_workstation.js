@@ -220,17 +220,19 @@ function shortHost(url) {
 /* ------------------------------------------------------------------ 面板渲染 */
 
 const CARD_STYLE =
-  "display:grid;gap:10px;padding:12px 14px;border-radius:12px;" +
-  "border:1px solid color-mix(in srgb,currentColor 16%,transparent);" +
-  "background:color-mix(in srgb,currentColor 4%,transparent)";
-const ROW_STYLE = "display:flex;align-items:center;gap:10px";
+  "display:grid;gap:14px;padding:16px;border-radius:12px;" +
+  "border:1px solid color-mix(in srgb,currentColor 18%,transparent);" +
+  "background:color-mix(in srgb,currentColor 5%,transparent)";
+const ROW_STYLE = "display:flex;align-items:center;gap:8px";
 const OPEN_BTN_STYLE =
-  "width:100%;padding:9px 12px;border:1px solid color-mix(in srgb,currentColor 30%,transparent);" +
-  "border-radius:9px;background:color-mix(in srgb,currentColor 8%,transparent);" +
-  "color:inherit;font:600 13px/1.2 inherit;cursor:pointer;text-align:left";
+  "width:100%;padding:10px 12px;border:1px solid #7d6848;border-radius:9px;" +
+  "background:#2a241c;color:#f0cf98;font:600 13px/1.2 inherit;cursor:pointer";
 const MINI_BTN_STYLE =
   "padding:4px 8px;border:1px solid color-mix(in srgb,currentColor 20%,transparent);" +
   "border-radius:7px;background:transparent;color:inherit;font:500 11px/1.2 inherit;cursor:pointer";
+const TITLE_STYLE = "margin:0 0 6px;font-size:16px;line-height:1.3;font-weight:600";
+const SUMMARY_STYLE = "margin:0;opacity:.72;font-size:12px;line-height:1.6";
+const HINT_STYLE = "margin:0;opacity:.58;font-size:11px;line-height:1.55";
 
 function renderPanel(host) {
   host.replaceChildren();
@@ -295,40 +297,50 @@ function renderPanel(host) {
 function buildCard(tool, host) {
   const card = el("section", CARD_STYLE);
 
+  /* 标题行：图标 + 名称 + 右侧小标签 */
+  const head = el("div", "");
   const row = el("div", ROW_STYLE);
   row.append(
-    el("span", "font-size:18px;line-height:1;width:24px;text-align:center;flex-shrink:0", tool.icon || "🧩"),
-    el("span", "flex:1;font:600 13px/1.3 inherit;overflow:hidden;text-overflow:ellipsis;white-space:nowrap", tool.name),
+    el("span", "font-size:18px;line-height:1;flex-shrink:0", tool.icon || "🧩"),
+    el("h2", TITLE_STYLE + ";flex:1;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap", tool.name),
     el("span", "font-size:11px;opacity:.55;flex-shrink:0",
        tool.hint || (tool.url && tool.url.startsWith("/") ? "站内" : shortHost(tool.url))),
   );
-  card.append(row);
+  head.append(row);
+  /* 描述行 */
+  if (tool.summary) head.append(el("p", SUMMARY_STYLE + ";margin:6px 0 0", tool.summary));
+  card.append(head);
 
-  /* 状态行（仅在配置了探测时显示） */
+  /* 状态行（配置了探测才显示） */
   if ((tool.status_mode || "http") !== "none" && (tool.status_url || tool.url)) {
     const statusRow = el("div", ROW_STYLE);
     const dot = el("span", "width:8px;height:8px;border-radius:50%;background:#888;flex-shrink:0");
     dot.dataset.statusDot = tool.id;
-    const text = el("span", "flex:1;font-size:11px;opacity:.62", "查询中…");
+    const text = el("span", HINT_STYLE + ";flex:1", "查询中…");
     text.dataset.statusText = tool.id;
     statusRow.append(dot, text);
     card.append(statusRow);
   }
 
-  const actions = el("div", "display:flex;align-items:center;gap:6px");
-  const openLabel = `${(tool.open_mode || "embed") === "new_window" ? "↗ 打开" : "⧉ 在 ComfyUI 内打开"}`;
-  actions.append(
-    btn(openLabel, OPEN_BTN_STYLE + ";flex:1", () => openTool(tool), tool.url),
-    btn("✎", MINI_BTN_STYLE, () => { state.editingId = tool.id; renderPanel(host); }, "编辑"),
-    btn("🗑", MINI_BTN_STYLE, () => {
+  /* 全宽主按钮（曜石导演台同款琥珀色） */
+  const embed = (tool.open_mode || "embed") !== "new_window";
+  card.append(btn(embed ? "打开" : "在新窗口打开", OPEN_BTN_STYLE, () => openTool(tool), tool.url));
+
+  /* 提示行 + 管理按钮 */
+  const foot = el("div", "display:flex;align-items:center;gap:8px");
+  foot.append(
+    el("p", HINT_STYLE + ";flex:1;margin:0",
+       embed ? "在 ComfyUI 内浮层打开，可用「返回画布」关闭。" : "在新浏览器窗口打开。"),
+    btn("✎ 编辑", MINI_BTN_STYLE, () => { state.editingId = tool.id; renderPanel(host); }),
+    btn("🗑 删除", MINI_BTN_STYLE, () => {
       if (!window.confirm(`删除工具「${tool.name}」？`)) return;
       mutateTools((draft) => {
         const idx = draft.findIndex((t) => t.id === tool.id);
         if (idx >= 0) draft.splice(idx, 1);
       }).then(() => renderPanel(host));
-    }, "删除"),
+    }),
   );
-  card.append(actions);
+  card.append(foot);
   return card;
 }
 
@@ -345,7 +357,7 @@ function lockedInput(label, value, styles = "") {
 function buildEditor(tool, host) {
   const isNew = !tool;
   const draft = tool ? { ...tool } : {
-    id: "", name: "", url: "", icon: "🧩", hint: "",
+    id: "", name: "", url: "", icon: "🧩", summary: "", hint: "",
     open_mode: "embed", status_url: "", status_mode: "http", status_label: "", enabled: true,
   };
 
@@ -355,7 +367,8 @@ function buildEditor(tool, host) {
   const nameF = lockedInput("名称", draft.name);
   const urlF = lockedInput("地址（站内路径 /xxx 或 http(s)://host:port/）", draft.url);
   const iconF = lockedInput("图标（emoji）", draft.icon, ";width:64px");
-  const hintF = lockedInput("右侧小字（端口/说明，可空）", draft.hint);
+  const sumF = lockedInput("描述（一句话，可空）", draft.summary);
+  const hintF = lockedInput("右侧小字（端口/标签，可空）", draft.hint);
 
   const modeRow = el("div", "display:grid;gap:4px;font-size:11px;opacity:.85");
   modeRow.append(el("span", "", "打开方式"));
@@ -391,6 +404,7 @@ function buildEditor(tool, host) {
         name: nameF.input.value.trim(),
         url: urlF.input.value.trim(),
         icon: iconF.input.value.trim() || "🧩",
+        summary: sumF.input.value.trim(),
         hint: hintF.input.value.trim(),
         open_mode: modeSel.value,
         status_url: statusF.input.value.trim(),
@@ -406,7 +420,7 @@ function buildEditor(tool, host) {
     }),
   );
 
-  card.append(nameF.box, urlF.box, iconF.box, hintF.box, modeRow, statusF.box, statusModeRow, actions);
+  card.append(nameF.box, urlF.box, iconF.box, sumF.box, hintF.box, modeRow, statusF.box, statusModeRow, actions);
   return card;
 }
 
@@ -462,6 +476,7 @@ function buildImportPanel(host) {
           name: item.name || "未命名工具",
           url: item.url || "",
           icon: item.icon || "🧩",
+          summary: item.summary || "",
           hint: item.hint || "",
           open_mode: item.open_mode === "new_window" ? "new_window" : "embed",
           status_url: item.status_url || "",
@@ -521,7 +536,8 @@ async function scanLocalServices() {
     for (const item of fresh) {
       list.push({
         id: "", name: `本机服务 :${item.port}`, url: `http://127.0.0.1:${item.port}/`,
-        icon: "🔌", hint: `:${item.port}`, open_mode: "embed",
+        icon: "🔌", summary: `本机 ${item.port} 端口服务`,
+        hint: `:${item.port}`, open_mode: "embed",
         status_url: "", status_mode: "http", status_label: "", enabled: true,
       });
     }
