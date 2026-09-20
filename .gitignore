@@ -7,3 +7,7 @@ caches/
 _dump*.txt
 *.bak
 *.bak_*
+
+# 运行时用户数据（工作台工具清单等）——不属于代码，禁止入库
+**/deciia_workstation/tools.json
+**/deciia_workstation/*.tmp

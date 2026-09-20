@@ -28,7 +28,7 @@ ComfyUI 左侧栏「工作台」启动器：把本机各服务/工具收进一�
 - **两种打开方式**（每条独立）：`embed` = ComfyUI 内浮层 iframe（同曜石导演台体验）；`new_window` = 浏览器新窗口。
 - **四种添加方式**：手动填写 / 粘贴一行解析（`名称 | 地址 | 图标 | 备注 | 模式`）/ 粘贴 JSON 批量导入 / 扫描本机常见端口自动发现。
 - **状态探测**：可选，支持「HTTP 200 即在线」或「JSON 字段」（如 DirectorDeck 的 `backend=ready`）。
-- **存储**：`ComfyUI/user/deciia_workstation/tools.json`（与工作流无关，带 revision 冲突检测，多标签页不会静默覆盖）。
+- **存储**：`ComfyUI/user/deciia_workstation/tools.json`（`folder_paths.get_user_directory()`，不在本仓库内）（与工作流无关，带 revision 冲突检测，多标签页不会静默覆盖）。
 
 内置默认四条：曜石导演台（内浮层）、Director、Dreamifly、NEXUS BTA Studio（后三条新窗口）。
 

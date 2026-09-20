@@ -2,7 +2,7 @@
 
 设计要点（作者 deciia）：
 - 工作台本身是「启动器」：工具条目由用户自行增删，不写死在代码里；
-- 清单持久化在 ComfyUI 用户目录（user/default/deciia_workstation/tools.json），
+- 清单持久化在 ComfyUI 用户目录（user/deciia_workstation/tools.json），
   与工作流无关 —— 换工作流/换标签页都看到同一份工具；
 - 后端只做两件事：读写清单（带 revision 冲突检测）、探测目标 URL 是否在线；
 - 前端（web/deciia_workstation.js）负责侧栏面板、卡片渲染、内嵌/新窗打开。
