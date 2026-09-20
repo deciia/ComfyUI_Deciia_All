@@ -12,7 +12,7 @@
 
 | 节点 | 模块 | 用途 |
 |---|---|---|
-| `DeciiaChunkedPass2Sampler` | minimax_h3/h3_sampling | H3 二采**时间分块**执行器：低显存跑高分辨率/长时长二采，支持 `refined_exp` 音频精修（截获二采精修音频按绝对时间对位拼回，替代默认的一采原声直通） |
+| `DeciiaChunkedPass2SamplerLegacy` | minimax_h3/h3_sampling | H3 二采**时间分块**执行器：低显存跑高分辨率/长时长二采，支持 `refined_exp` 音频精修（截获二采精修音频按绝对时间对位拼回，替代默认的一采原声直通）（T8 v1.85 起官方同 ID 节点并存，本包节点加 Legacy 后缀） |
 | `DeciiaTiledSecondPass` | minimax_h3/h3_sampling | H3 二采空间分块执行器（GH `TiledSamplerLegacy.sample_tiled` 薄壳，备援路线） |
 | `DeciiaLoraStack` | stacks | 动态 LoRA 串：槽位增删/重排/旁路模式，前端自动伸缩 |
 | `DeciiaVramSafeLoraStack` | stacks | 显存安全 LoRA 串：加载即测显存余量，超限自动旁路 |

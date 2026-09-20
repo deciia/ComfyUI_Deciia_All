@@ -9,7 +9,7 @@ GH 全家桶前端 + T8 官方分块二采（`standard_joint_4plus4_exp`）的�
 | 路线 | 节点组 | 特点 |
 |---|---|---|
 | 4plus4 官方路线（推荐） | 「4plus4 路线」组：ChunkedTwoPassPlan + ChunkedTwoPassUpscale | 每窗后 4 步联合 AV 重采样，原生二采音频，无补丁依赖 |
-| 旧路线（壳 + refined_exp） | 「旧路线」组：DeciiaChunkedPass2Sampler | DetailMixer 精修口（Tail/Bias/STG/Restart），二采音频靠截获拼接 |
+| 旧路线（壳 + refined_exp） | 「旧路线」组：`DeciiaChunkedPass2Sampler` | DetailMixer 精修口（Tail/Bias/STG/Restart），二采音频靠截获拼接 |
 
 注意：GH HIGH 桥（`MiniMaxH3GHGuideT8`）的 width/height 必须与所走路线对齐——官方路线接 Plan 的目标尺寸输出口；旧路线接 LearnedLatentUpscale 的同名牌（否则 Reconcile 报形状不匹配）。
 
@@ -29,7 +29,10 @@ GH 全家桶前端 + T8 官方分块二采（`standard_joint_4plus4_exp`）的�
 **Deciia · ComfyUI_Deciia_All**（本仓库）
 - MiniMaxH3GHGuideT8（GH→T8 桥，把 GH 前端产物用 T8 build_conditioning 重编码）
 - DeciiaVramSafeLoraStack（分档 LoRA 栈，LOW/HIGH 差异化强度）
-- DeciiaChunkedPass2Sampler（T8 v4 时间分块二采壳，旧路线用）
+- `DeciiaChunkedPass2Sampler`（T8 v4 时间分块二采壳，旧路线用）
+  - 命名：**T8 v1.85.0 起官方内置同名节点**（原生适配实现，安全默认 `preserve_first_pass`）。
+    本包原节点已改名 `DeciiaChunkedPass2SamplerLegacy` 共存、互不遮蔽；两者 widget 顺序一致，可互换。
+    本示例工作流用官方版（装上 T8 1.85+ 即可直接跑）
 
 **加速与显存**
 - MiniMaxH3MemoryEfficientSageAttentionPatch、MiniMaxChunkFeedForward、MiniMaxLowVRAMAttention、ModelPreviewOverrideKJ（[kijai/ComfyUI-KJNodes](https://github.com/kijai/ComfyUI-KJNodes)）；ModelAttentionBackend（内置）

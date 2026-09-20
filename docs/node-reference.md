@@ -2,8 +2,14 @@
 
 ## minimax_h3/h3_sampling
 
-### DeciiaChunkedPass2Sampler
+### DeciiaChunkedPass2SamplerLegacy
 H3 二采**时间分块**执行器（T8 `chunked_two_pass_upscale_advanced` 薄壳）。
+
+> 命名说明：T8 v1.85.0 起官方内置同名节点 `DeciiaChunkedPass2Sampler`
+> （原生适配实现，安全默认 `preserve_first_pass`）。本包节点已改名加
+> `Legacy` 后缀共存、互不遮蔽：工作流里 `DeciiaChunkedPass2Sampler`
+> 解析到 T8 官方版，`DeciiaChunkedPass2SamplerLegacy` 解析到本包薄壳。
+> 两者 widget 顺序一致，可互换。
 
 - 输入 `noise / guider / sampler / sigmas / latent_image`，输出
   `output / denoised_output`，与 `SamplerCustomAdvanced` 接口同形，

@@ -132,19 +132,19 @@ def _nested_av_parts(latent):
     samples = latent.get("samples") if isinstance(latent, dict) else None
     if samples is None:
         raise ValueError(
-            "DeciiaChunkedPass2Sampler: latent_image 缺少 samples；"
+            "DeciiaChunkedPass2SamplerLegacy: latent_image 缺少 samples；"
             "请接 T8 reconcile / learned upscale 输出的 H3 AV latent"
         )
     if getattr(samples, "is_nested", False):
         tensors = samples.tensors
         if len(tensors) != 2:
             raise ValueError(
-                f"DeciiaChunkedPass2Sampler: 期望 H3 AV 双张量 nested latent，"
+                f"DeciiaChunkedPass2SamplerLegacy: 期望 H3 AV 双张量 nested latent，"
                 f"实际 {len(tensors)} 个"
             )
         return tensors[0], tensors[1]
     raise ValueError(
-        "DeciiaChunkedPass2Sampler: latent_image 不是 NestedTensor AV latent"
+        "DeciiaChunkedPass2SamplerLegacy: latent_image 不是 NestedTensor AV latent"
         "（缺 audio 分量）；请从 T8 双采链取 latent"
     )
 
@@ -178,7 +178,7 @@ def _raw_conditioning_from_guider(guider):
     negative_conv = conds.get("negative")
     if not positive_conv:
         raise ValueError(
-            "DeciiaChunkedPass2Sampler: guider 上找不到 positive 条件"
+            "DeciiaChunkedPass2SamplerLegacy: guider 上找不到 positive 条件"
             "（支持 BasicGuider / CFGGuider）"
         )
 
@@ -377,14 +377,14 @@ def _execute_with_refined_audio(
         return output, report_json
 
 
-class DeciiaChunkedPass2Sampler(io.ComfyNode):
-    """T8 v4 时间分块低Sigma二采的 deciia 壳（1:1 替换 SamplerCustomAdvanced PASS 2）。"""
+class DeciiaChunkedPass2SamplerLegacy(io.ComfyNode):
+    """T8 v4 时间分块低Sigma二采的 deciia 壳（1:1 替换 SamplerCustomAdvanced PASS 2）。命名后缀 Legacy：T8 v1.85.0 起官方内置同名节点 DeciiaChunkedPass2Sampler（原生适配实现），本节点改名共存、互不遮蔽，供参考/对照使用。"""
 
     @classmethod
     def define_schema(cls):
         return io.Schema(
-            node_id="DeciiaChunkedPass2Sampler",
-            display_name="Deciia 分块PASS2(T8 v4·时间分块·全画幅)",
+            node_id="DeciiaChunkedPass2SamplerLegacy",
+            display_name="Deciia 分块PASS2 Legacy (T8 v4·时间分块·全画幅·参考实现)",
             category="Deciia/Sampling",
             description=(
                 "Drop-in replacement for the PASS 2 SamplerCustomAdvanced. "
@@ -484,7 +484,7 @@ class DeciiaChunkedPass2Sampler(io.ComfyNode):
         video, audio = _nested_av_parts(latent_image)
         if video.ndim != 5:
             raise ValueError(
-                f"DeciiaChunkedPass2Sampler: video latent 应为 5D，"
+                f"DeciiaChunkedPass2SamplerLegacy: video latent 应为 5D，"
                 f"实际 {video.ndim}D shape={tuple(video.shape)}"
             )
         target_width = int(video.shape[-1]) * _VAE_DOWNSAMPLE
@@ -555,7 +555,7 @@ class DeciiaChunkedPass2Sampler(io.ComfyNode):
         return io.NodeOutput(output, output)
 
 
-NODE_CLASS_MAPPINGS = {"DeciiaChunkedPass2Sampler": DeciiaChunkedPass2Sampler}
+NODE_CLASS_MAPPINGS = {"DeciiaChunkedPass2SamplerLegacy": DeciiaChunkedPass2SamplerLegacy}
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "DeciiaChunkedPass2Sampler": "Deciia 分块PASS2(T8 v4·时间分块·全画幅)"
+    "DeciiaChunkedPass2SamplerLegacy": "Deciia 分块PASS2 Legacy (T8 v4·时间分块·全画幅·参考实现)"
 }
