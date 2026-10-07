@@ -563,6 +563,7 @@ class MiniMaxH3GHGuideT8(io.ComfyNode):
                 io.Vae.Output(display_name="音频VAE"),
                 io.Int.Output(display_name="模型序号"),
                 io.Boolean.Output(display_name="是否原声"),
+                io.Float.Output(display_name="视频时长(秒)"),
             ],
         )
 
@@ -651,6 +652,7 @@ class MiniMaxH3GHGuideT8(io.ComfyNode):
             integration.get("audio_vae"),
             _mode_model_number(main_mode),
             bool(integration.get("is_original_audio", False)),
+            round(frames / 24.0, 3),
         )
 
 

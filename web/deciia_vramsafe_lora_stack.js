@@ -4,9 +4,11 @@
  * 班长面板 UX（banzhang_lora_loader v2.1）+ Deciia 方式列（v12 内核）合并。
  * 目标节点：DeciiaVramSafeLoraStack（后端 deciia_vramsafe_lora_stack.py）
  *
- * 每行：[启用勾选] [LoRA文件(Filter+文件夹树弹层)] [强度] [⇄方式] [备注] [×删除]
- *   ⇄ 两态：灰空心=标准（权重融合，LoRA only 变体/风格/修复类）
- *           绿实心=旁路（前向叠加不改权重，量化基座 bypass 变体）
+ * 每行：[启用勾选] [LoRA文件(Filter+文件夹树弹层)] [强度] [方式图标] [备注] [×删除]
+ *   方式图标（点击展开列表，选中后只显示图标、悬浮出说明）：
+ *           灰·层叠=标准（权重融合，默认）  绿·分流=旁路（前向叠加不改权重）
+ *           蓝·调色板=风格（下游按风格屏蔽） 紫·人像=人物（始终保留）
+ *   扩展：DVZ_MODES 加一条（图标/配色/说明） + 后端 MODE_TABLE 加一条
  * 底部：[＋ 添加 LoRA] [↑ 上移] [↓ 下移]（点行选中），最多 16 行
  * 面板行(on/file/strength/mode/note)整体序列化进「LoRA配置」STRING widget；
  * 「LoRA文件」「模型强度」兜底 widget 隐藏不删（扩展未加载时仍可单 LoRA 使用）。
@@ -17,9 +19,33 @@
 import { app } from "../../../scripts/app.js";
 
 const NODE_NAME = "DeciiaVramSafeLoraStack";
+console.log("[Deciia VramSafe LoRA] JS v20261001-3 (preset groups) 加载");
 const MAX_ROWS = 16;
 const MODE_STD = "标准";
 const MODE_BYPASS = "旁路";
+const MODE_STYLE = "风格";
+const MODE_PERSON = "人物";
+
+// ── 方式注册表（前端单一扩展点）──────────────────────────────────────────
+// 加新类型：这里加一条 + 后端 MODE_TABLE 加一条。id 同时是写进配置 JSON 的值。
+//   cls  : chip / 列表图标的配色类（与 .dvz-std/.dvz-bypass/... 对应）
+//   icon : 14px 内联 SVG（stroke 用 currentColor，随配色走）
+const DVZ_MODES = [
+  { id: MODE_STD,    label: "标准", desc: "权重融合（默认）",                    cls: "dvz-std",
+    icon: '<path d="M12 3 3 8l9 5 9-5-9-5Z"/><path d="M3 13l9 5 9-5"/>' },
+  { id: MODE_BYPASS, label: "旁路", desc: "前向叠加，不改权重（量化基座变体）",   cls: "dvz-bypass",
+    icon: '<path d="M12 20v-9"/><path d="M12 11 6 5"/><path d="M12 11l6-6"/>' },
+  { id: MODE_STYLE,  label: "风格", desc: "选工作台风格时由下游自动屏蔽",         cls: "dvz-style",
+    icon: '<circle cx="12" cy="12" r="8.5"/><circle cx="9" cy="10" r="1.2"/><circle cx="15" cy="10" r="1.2"/><circle cx="12" cy="15" r="1.2"/>' },
+  { id: MODE_PERSON, label: "人物", desc: "始终保留（不被风格屏蔽）",             cls: "dvz-person",
+    icon: '<circle cx="12" cy="8" r="3.6"/><path d="M5.5 19.5a6.5 6.5 0 0 1 13 0"/>' },
+];
+const DVZ_MODE_MAP = Object.fromEntries(DVZ_MODES.map((m) => [m.id, m]));
+function modeSVG(m, px) {
+  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" '
+    + 'stroke-linecap="round" stroke-linejoin="round" style="width:' + px + 'px;height:' + px
+    + 'px;display:block">' + m.icon + '</svg>';
+}
 
 // ── 样式注入（dvz- 前缀，不与班长 bzl- 冲突）────────────────
 (function injectCss() {
@@ -47,9 +73,23 @@ const MODE_BYPASS = "旁路";
 .dvz-empty{padding:10px;color:#8a8f99;font-size:12px;text-align:center}
 .dvz-row .dvz-str{width:58px;flex-shrink:0;background:#22242a;color:#e8e8e8;border:1px solid #3a3d45;border-radius:6px;padding:4px;font-size:12px;outline:none}
 .dvz-row .dvz-str:focus{border-color:#4a9eff}
-.dvz-row .dvz-mode{width:26px;height:24px;flex-shrink:0;border-radius:6px;font-size:13px;cursor:pointer;user-select:none;line-height:1;padding:0}
-.dvz-row .dvz-mode.dvz-std{background:transparent;border:1px solid #666;color:#9aa0aa}
-.dvz-row .dvz-mode.dvz-bypass{background:#2d5a3e;border:1px solid #3f8f5f;color:#9fe8b8}
+  .dvz-row .dvz-mode{width:26px;height:24px;flex-shrink:0;border-radius:6px;font-size:13px;cursor:pointer;user-select:none;line-height:1;padding:0;display:inline-flex;align-items:center;justify-content:center}
+  .dvz-row .dvz-mode.dvz-std{background:transparent;border:1px solid #666;color:#9aa0aa}
+  .dvz-row .dvz-mode.dvz-bypass{background:#2d5a3e;border:1px solid #3f8f5f;color:#9fe8b8}
+  .dvz-row .dvz-mode.dvz-style{background:#1e3e66;border:1px solid #4a9eff;color:#96c8ff}
+  .dvz-row .dvz-mode.dvz-person{background:#3e2c5c;border:1px solid #aa82dc;color:#d6baff}
+  .dvz-row .dvz-mode:hover{filter:brightness(1.25)}
+  .dvz-menu{padding:4px}
+  .dvz-mi{display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:6px;cursor:pointer;color:#e8e8e8;font-size:12.5px}
+  .dvz-mi:hover{background:rgba(255,255,255,.07)}
+  .dvz-mi .dvz-mii{width:26px;height:24px;flex-shrink:0;border-radius:6px;display:inline-flex;align-items:center;justify-content:center}
+  .dvz-mi .dvz-mii.dvz-std{background:transparent;border:1px solid #666;color:#9aa0aa}
+  .dvz-mi .dvz-mii.dvz-bypass{background:#2d5a3e;border:1px solid #3f8f5f;color:#9fe8b8}
+  .dvz-mi .dvz-mii.dvz-style{background:#1e3e66;border:1px solid #4a9eff;color:#96c8ff}
+  .dvz-mi .dvz-mii.dvz-person{background:#3e2c5c;border:1px solid #aa82dc;color:#d6baff}
+  .dvz-mi .dvz-mil{flex-shrink:0;min-width:34px}
+  .dvz-mi .dvz-mid{color:#9aa0aa;font-size:11px;white-space:nowrap}
+  .dvz-mi .dvz-cnt{margin-left:auto;color:#4a9eff;font-size:12px;padding-left:6px}
 .dvz-row .dvz-note{flex:.5;min-width:0;background:transparent;color:#cfcfcf;border:none;border-bottom:1px dashed #3a3d45;padding:4px 2px;font-size:12px;outline:none}
 .dvz-row .dvz-note:focus{border-bottom-color:#4a9eff}
 .dvz-row .dvz-del{width:20px;height:20px;line-height:18px;text-align:center;border:none;border-radius:5px;background:transparent;color:#ff6b6b;font-size:15px;cursor:pointer;flex-shrink:0;padding:0}
@@ -234,7 +274,8 @@ function openTreePopup(anchor, files, current, onPick, ev) {
 
 // ── 行数据 ────────────────────────────────────────────────────
 function normMode(v) {
-  return v === MODE_BYPASS ? MODE_BYPASS : MODE_STD;
+  const k = v == null ? "" : String(v).trim();
+  return DVZ_MODE_MAP[k] ? DVZ_MODE_MAP[k].id : MODE_STD;
 }
 
 function defaultRow() {
@@ -243,20 +284,47 @@ function defaultRow() {
 }
 
 function syncConfig(node) {
+  // 2026-10-02: _dvzRows 与组 rows 可能不同引用（restoreRows/switchGroup 对
+  // 空组走 [defaultRow()] 兜底时替换了数组）— 打包前必须把当前行写回组，
+  // 否则序列化读到的是组里滞留的旧行，编辑在切页/保存时全部丢失。
+  _applyRowsToGroup(node);
   const cfg = node.widgets?.find((w) => w.name === "LoRA配置");
-  const json = JSON.stringify(node._dvzRows || []);
+  const json = JSON.stringify(_packPresets(node));
   if (cfg) cfg.value = json;
+  // 2026-10-02: DOM 面板编辑绕过了 widget 交互管线, changeTracker 不会
+  // 捕获状态 → 切换工作流标签页时 activeState 还是打开时的旧快照, 编辑丢失。
+  // 按官方事件协议(litegraph:canvas before/after-change 成对派发)通知
+  // 状态层: afterChange 归零时 captureCanvasState 会 serialize 整图(取
+  // widget.value = 刚写入的新 JSON)存入 activeState。
+  try {
+    document.dispatchEvent(new CustomEvent("litegraph:canvas", { detail: { subType: "before-change" } }));
+    document.dispatchEvent(new CustomEvent("litegraph:canvas", { detail: { subType: "after-change" } }));
+  } catch (e) { console.warn("[Deciia VramSafe LoRA] canvas event:", e); }
 }
 
-// 从 LoRA配置 恢复面板行；兼容 v0 老行（无 mode 键 → 标准）
-function restoreRows(node) {
-  const cfg = node.widgets?.find((w) => w.name === "LoRA配置");
-  let rows = [];
-  try {
-    rows = JSON.parse(cfg?.value ?? "[]");
-  } catch (e) { /* 脏数据走默认 */ }
-  if (!Array.isArray(rows)) rows = [];
-  rows = rows
+// ── 预设分组（2026-10-01；对齐 DeciiaModelHub 的组语义） ─────────
+function _packPresets(node) {
+  const groups = node._dvzPresets && node._dvzPresets.length ? node._dvzPresets : [{ name: "默认", rows: [] }];
+  return { presets: groups.map((g) => ({ name: g.name, rows: g.rows })), current: node._dvzGroup || groups[0].name };
+}
+
+function _unpackPresets(obj, node) {
+  // 兼容旧格式（纯数组 = "默认"组一行到底）
+  if (Array.isArray(obj)) {
+    return { groups: [{ name: "默认", rows: obj }], current: "默认" };
+  }
+  if (obj && Array.isArray(obj.presets) && obj.presets.length) {
+    const groups = obj.presets
+      .filter((g) => g && typeof g === "object")
+      .map((g) => ({ name: String(g.name || "组"), rows: Array.isArray(g.rows) ? g.rows : [] }));
+    const cur = String(obj.current || groups[0].name);
+    return { groups, current: groups.some((g) => g.name === cur) ? cur : groups[0].name };
+  }
+  return { groups: [{ name: "默认", rows: [] }], current: "默认" };
+}
+
+function _normRows(rows) {
+  return (Array.isArray(rows) ? rows : [])
     .filter((x) => x && typeof x === "object")
     .map((x) => ({
       on: x.on !== false,
@@ -265,16 +333,103 @@ function restoreRows(node) {
       mode: normMode(x.mode),
       note: typeof x.note === "string" ? x.note : "",
     }));
-  node._dvzRows = rows.length ? rows : [defaultRow()];
+}
+
+// 从 LoRA配置 恢复面板行；兼容 v0 老行（无 mode 键 → 标准）与旧纯数组格式
+function restoreRows(node) {
+  const cfg = node.widgets?.find((w) => w.name === "LoRA配置");
+  let obj;
+  try {
+    obj = JSON.parse(cfg?.value ?? "null");
+  } catch (e) { obj = null; }
+  if (obj == null || (Array.isArray(obj) && !obj.length)) {
+    // widget 值尚未灌入（异步物化窗口）或为空：已有预设则保现状，别清面板
+    if (node._dvzPresets?.length) return;
+    obj = [];
+  }
+  const { groups, current } = _unpackPresets(obj, node);
+  node._dvzPresets = groups.map((g) => ({ name: g.name, rows: _normRows(g.rows) }));
+  node._dvzGroup = current;
+  const g = node._dvzPresets.find((x) => x.name === node._dvzGroup) || node._dvzPresets[0];
+  node._dvzRows = g.rows.length ? g.rows : [defaultRow()];
+  node._dvzRestoredOk = !!(obj && (Array.isArray(obj) ? obj.length : obj.presets?.length));
+  console.log("[Deciia VramSafe LoRA] restoreRows:", node._dvzRestoredOk ? "已载入" : "空/未灌值",
+    "| 组数", node._dvzPresets.length, "| 当前行数", node._dvzRows.length);
+}
+
+function _applyRowsToGroup(node) {
+  const g = node._dvzPresets?.find((x) => x.name === node._dvzGroup);
+  if (g) g.rows = node._dvzRows || [];
+}
+
+function _switchGroup(node, name) {
+  _applyRowsToGroup(node); // 当前行先写回组
+  const g = node._dvzPresets.find((x) => x.name === name);
+  if (!g) return;
+  node._dvzGroup = name;
+  node._dvzRows = g.rows.length ? g.rows : [defaultRow()];
+  node._dvzSel = node._dvzRows.length - 1;
+  rebuildPanel(node);
+  syncConfig(node);
 }
 
 // ── 行构建 ────────────────────────────────────────────────────
 function applyModeBtn(btn, mode) {
-  btn.classList.toggle("dvz-std", mode !== MODE_BYPASS);
-  btn.classList.toggle("dvz-bypass", mode === MODE_BYPASS);
-  btn.title = mode === MODE_BYPASS
-    ? "旁路：前向叠加，不改权重（量化基座 bypass 变体用）。点击切回标准"
-    : "标准：权重融合（LoRA only 变体/风格/修复类用）。点击切为旁路";
+  const m = DVZ_MODE_MAP[mode] || DVZ_MODE_MAP[MODE_STD];
+  for (const x of DVZ_MODES) btn.classList.toggle(x.cls, x.id === m.id);
+  btn.innerHTML = modeSVG(m, 14);
+  btn.title = m.label + "：" + m.desc + "。点击展开方式列表";
+}
+
+// 点击方式按钮 → 展开列表（沿用 dvz-pop / dvz-mask，一次只开一个弹层）
+function openModeMenu(anchor, current, onPick, ev) {
+  closeTreePopup();
+  DVZ_MASK = document.createElement("div");
+  DVZ_MASK.className = "dvz-mask";
+  DVZ_MASK.addEventListener("mousedown", closeTreePopup);
+  document.body.appendChild(DVZ_MASK);
+
+  const menu = document.createElement("div");
+  menu.className = "dvz-pop dvz-menu";
+  for (const m of DVZ_MODES) {
+    const it = document.createElement("div");
+    it.className = "dvz-mi";
+    it.title = m.label + "：" + m.desc;
+    const ii = document.createElement("span");
+    ii.className = "dvz-mii " + m.cls;
+    ii.innerHTML = modeSVG(m, 14);
+    const il = document.createElement("span");
+    il.className = "dvz-mil";
+    il.textContent = m.id === MODE_STD ? "标准（默认）" : m.label;
+    const idd = document.createElement("span");
+    idd.className = "dvz-mid";
+    idd.textContent = m.desc;
+    it.append(ii, il, idd);
+    if (m.id === current) {
+      const ck = document.createElement("span");
+      ck.className = "dvz-cnt";
+      ck.textContent = "✓";
+      it.append(ck);
+    }
+    it.onclick = (e) => { e.stopPropagation(); closeTreePopup(); onPick(m.id); };
+    menu.appendChild(it);
+  }
+  document.body.appendChild(menu);
+  DVZ_POP = menu;
+
+  const place = () => {
+    const r = anchor.getBoundingClientRect();
+    const w = menu.offsetWidth || 232;
+    let left = r.left + r.width - w;
+    let top = r.bottom + 4;
+    left = Math.max(6, Math.min(left, window.innerWidth - w - 6));
+    if (top + menu.offsetHeight > window.innerHeight - 6) top = Math.max(6, r.top - menu.offsetHeight - 4);
+    menu.style.left = left + "px";
+    menu.style.top = top + "px";
+  };
+  place();
+  DVZ_PLACE = place;
+  window.addEventListener("resize", place);
 }
 
 function buildRow(node, row, index) {
@@ -336,13 +491,14 @@ function buildRow(node, row, index) {
   const mode = document.createElement("button");
   mode.type = "button";
   mode.className = "dvz-mode";
-  mode.textContent = "⇄";
   applyModeBtn(mode, row.mode);
   mode.onclick = (e) => {
     e.stopPropagation();
-    row.mode = row.mode === MODE_BYPASS ? MODE_STD : MODE_BYPASS;
-    applyModeBtn(mode, row.mode);
-    syncConfig(node);
+    openModeMenu(mode, row.mode, (picked) => {
+      row.mode = picked;
+      applyModeBtn(mode, row.mode);
+      syncConfig(node);
+    }, e);
   };
 
   const note = document.createElement("input");
@@ -385,10 +541,116 @@ function rebuildPanel(node) {
   wrap.innerHTML = "";
 
   const rows = node._dvzRows;
+
+  // ── 组条（预设分组，2026-10-01）：组下拉 + 组管理，行面板以上轻量一条 ──
+  const gbar = document.createElement("div");
+  gbar.className = "dvz-bar";
+  gbar.style.marginBottom = "4px";
+  const gsel = document.createElement("div");
+  gsel.className = "dvz-file";
+  gsel.style.flex = "1";
+  gsel.textContent = `组：${node._dvzGroup || "默认"}`;
+  gsel.title = "当前预设组。点击切换 / 管理";
+  gsel.onclick = (e) => {
+    e.stopPropagation();
+    closeTreePopup();
+    DVZ_MASK = document.createElement("div");
+    DVZ_MASK.className = "dvz-mask";
+    DVZ_MASK.addEventListener("mousedown", closeTreePopup);
+    document.body.appendChild(DVZ_MASK);
+    const menu = document.createElement("div");
+    menu.className = "dvz-pop dvz-menu";
+    (node._dvzPresets || []).forEach((g) => {
+      const it = document.createElement("div");
+      it.className = "dvz-mi";
+      const il = document.createElement("span");
+      il.className = "dvz-mil";
+      il.textContent = g.name;
+      const idd = document.createElement("span");
+      idd.className = "dvz-mid";
+      idd.textContent = `${g.rows.length} 行`;
+      it.append(il, idd);
+      if (g.name === node._dvzGroup) {
+        const ck = document.createElement("span");
+        ck.className = "dvz-cnt";
+        ck.textContent = "✓";
+        it.append(ck);
+      }
+      it.onclick = (ev) => { ev.stopPropagation(); closeTreePopup(); _switchGroup(node, g.name); };
+      menu.appendChild(it);
+    });
+    const mk = document.createElement("div");
+    mk.className = "dvz-mi";
+    const ml = document.createElement("span");
+    ml.className = "dvz-mil";
+    ml.textContent = "＋ 新组";
+    mk.appendChild(ml);
+    mk.onclick = (ev) => {
+      ev.stopPropagation(); closeTreePopup();
+      const name = (prompt("新组名（如 qwen2.1 / krea2）", `组${(node._dvzPresets || []).length + 1}`) || "").trim();
+      if (!name) return;
+      if ((node._dvzPresets || []).some((g) => g.name === name)) return alert(`组「${name}」已存在`);
+      _applyRowsToGroup(node);
+      node._dvzPresets.push({ name, rows: [] });
+      _switchGroup(node, name);
+    };
+    menu.appendChild(mk);
+    const rn = document.createElement("div");
+    rn.className = "dvz-mi";
+    const rl = document.createElement("span");
+    rl.className = "dvz-mil";
+    rl.textContent = "✎ 改名";
+    rn.appendChild(rl);
+    rn.onclick = (ev) => {
+      ev.stopPropagation(); closeTreePopup();
+      const g = node._dvzPresets?.find((x) => x.name === node._dvzGroup);
+      if (!g) return;
+      const name = (prompt("组改名", g.name) || "").trim();
+      if (!name || name === g.name) return;
+      if (node._dvzPresets.some((x) => x.name === name)) return alert(`组「${name}」已存在`);
+      g.name = name;
+      node._dvzGroup = name;
+      rebuildPanel(node);
+      syncConfig(node);
+    };
+    menu.appendChild(rn);
+    const dl = document.createElement("div");
+    dl.className = "dvz-mi";
+    const dll = document.createElement("span");
+    dll.className = "dvz-mil";
+    dll.textContent = "✕ 删除当前组";
+    dl.appendChild(dll);
+    dl.onclick = (ev) => {
+      ev.stopPropagation(); closeTreePopup();
+      if ((node._dvzPresets || []).length <= 1) return alert("至少保留一个组");
+      if (!confirm(`删除组「${node._dvzGroup}」？`)) return;
+      node._dvzPresets = node._dvzPresets.filter((g) => g.name !== node._dvzGroup);
+      _switchGroup(node, node._dvzPresets[0].name);
+    };
+    menu.appendChild(dl);
+    document.body.appendChild(menu);
+    DVZ_POP = menu;
+    const place = () => {
+      const r = gsel.getBoundingClientRect();
+      const w = menu.offsetWidth || 232;
+      let left = Math.max(6, Math.min(r.left, window.innerWidth - w - 6));
+      let top = r.bottom + 4;
+      if (top + menu.offsetHeight > window.innerHeight - 6) top = Math.max(6, r.top - menu.offsetHeight - 4);
+      menu.style.left = left + "px";
+      menu.style.top = top + "px";
+    };
+    place();
+    DVZ_PLACE = place;
+    window.addEventListener("resize", place);
+  };
+  gbar.appendChild(gsel);
+  wrap.appendChild(gbar);
+
   rows.forEach((row, i) => wrap.appendChild(buildRow(node, row, i)));
 
   const bar = document.createElement("div");
   bar.className = "dvz-bar";
+
   const add = document.createElement("div");
   add.className = "dvz-add";
   add.textContent = "＋ 添加 LoRA";
@@ -423,13 +685,13 @@ function rebuildPanel(node) {
   }
   const tip = document.createElement("div");
   tip.className = "dvz-tip";
-  tip.textContent = "⇄ 灰=标准(权重融合) · 绿=旁路(量化基座变体)；点行选中后可 ↑↓ 排序";
+  tip.textContent = "方式：点图标展开列表（标准/旁路/风格/人物）；点行选中后可 ↑↓ 排序";
   wrap.appendChild(tip);
 
   markSelection(node);
 
   // 高度：行 ~40px + 工具条/提示 ~78px；同步 canvas(computeSize) 与 Vue 布局层(get*Height)
-  node._dvzHeight = rows.length * 40 + 78;
+  node._dvzHeight = rows.length * 40 + 108; // +30 组条(2026-10-01)
   if (node._dvzDomW) {
     node._dvzDomW.computeSize = () => [node.size[0], node._dvzHeight];
   }
@@ -477,7 +739,8 @@ function setupPanel(node) {
   // 序列化兜底：提交 prompt / 保存工作流时都吐最新面板 JSON
   const cfg = node.widgets?.find((w) => w.name === "LoRA配置");
   if (cfg) {
-    cfg.serializeValue = () => JSON.stringify(node._dvzRows || []);
+    // 2026-10-01: 序列化吐预设分组结构（丢组=丢配置），不再吐裸行数组
+    cfg.serializeValue = () => JSON.stringify(_packPresets(node));
   }
 
   restoreRows(node);
@@ -522,12 +785,31 @@ app.registerExtension({
     const onConfigure = nodeType.prototype.configure;
     nodeType.prototype.configure = function (info) {
       const r = onConfigure ? onConfigure.apply(this, arguments) : undefined;
+      // 值灌入时机不定 — 轮询直到读到非空 LoRA配置 或超时（最多 ~6s）
+      const lateRestore = (n, tries = 0) => setTimeout(() => {
+        try {
+          const cfg = n.widgets?.find((w) => w.name === "LoRA配置");
+          let obj = null;
+          try { obj = JSON.parse(cfg?.value ?? "null"); } catch (e) {}
+          const empty = obj == null || (Array.isArray(obj) && !obj.length);
+          if (!empty) {
+            restoreRows(n);
+            if (!n._dvzRestoredOk) { if (tries < 12) lateRestore(n, tries + 1); return; }
+            n._dvzSel = n._dvzRows.length - 1;
+            rebuildPanel(n);
+            syncConfig(n);
+            console.log("[Deciia VramSafe LoRA] lateRestore 完成: 行数", n._dvzRows.length);
+            return; // 值已灌入并恢复，停止轮询
+          }
+          if (tries < 12) lateRestore(n, tries + 1);
+        } catch (e) { console.warn("[Deciia VramSafe LoRA] late restore:", e); }
+      }, 500);
       try {
         restoreRows(this);
         if (!this._dvzSel) this._dvzSel = this._dvzRows.length - 1;
         rebuildPanel(this);
-        syncConfig(this);
         ensureLoraList(this);
+        lateRestore(this);
       } catch (e) {
         console.warn("[Deciia VramSafe LoRA] configure:", e);
       }
